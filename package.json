@@ -3,7 +3,7 @@
     "name": "Mattias Runge",
     "email": "mattias@runge.se"
   },
-  "name": "phidget-interafacekit",
+  "name": "phidget-interfacekit",
   "description": "Node.js bindings for the Phidget Interfacekit API.",
   "keywords": [
     "phidget",
@@ -12,7 +12,7 @@
   "version": "0.0.1",
   "repository": {
     "type": "git",
-    "url": "git://github.com/mattiasrunge/phidget-interafacekit.git"
+    "url": "git://github.com/mattiasrunge/phidget-interfacekit.git"
   },
   "main": "lib/index.js",
   "scripts": {
@@ -27,7 +27,7 @@
   "gypfile": true,
   "readmeFilename": "README.md",
   "bugs": {
-    "url": "https://github.com/mattiasrunge/phidget-interafacekit/issues"
+    "url": "https://github.com/mattiasrunge/phidget-interfacekit/issues"
   },
-  "homepage": "https://github.com/mattiasrunge/phidget-interafacekit"
+  "homepage": "https://github.com/mattiasrunge/phidget-interfacekit"
 }
