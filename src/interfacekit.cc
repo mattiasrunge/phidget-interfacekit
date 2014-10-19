@@ -1,11 +1,9 @@
 #include <node.h>
 #include <v8.h>
 #include <phidget21.h>
+#include <vector>
 
 using namespace v8;
-
-Persistent<Object> contextObj;
-uv_async_t async;
 
 enum Events
 {
@@ -27,13 +25,21 @@ public:
     long handle;
 };
 
+static std::vector<Baton*> batons;
+Persistent<Object> contextObj;
+static uv_async_t async;
+static uv_mutex_t mutex;
+
 int CCONV attachHandler(CPhidgetHandle handle, void *userptr)
 {
     Baton *baton = new Baton;
-    async.data = (void*)baton;
-
     baton->handle = (long)handle;
     baton->event = ATTACH;
+
+    uv_mutex_lock(&mutex);
+    batons.push_back(baton);
+    uv_mutex_unlock(&mutex);
+
     uv_async_send(&async);
 
     return 0;
@@ -42,10 +48,13 @@ int CCONV attachHandler(CPhidgetHandle handle, void *userptr)
 int CCONV detachHandler(CPhidgetHandle handle, void *userptr)
 {
     Baton *baton = new Baton;
-    async.data = (void*)baton;
-
     baton->handle = (long)handle;
     baton->event = DETACH;
+
+    uv_mutex_lock(&mutex);
+    batons.push_back(baton);
+    uv_mutex_unlock(&mutex);
+
     uv_async_send(&async);
 
     return 0;
@@ -54,11 +63,14 @@ int CCONV detachHandler(CPhidgetHandle handle, void *userptr)
 int CCONV errorHandler(CPhidgetHandle handle, void *userptr, int errorCode, const char *unknown)
 {
     Baton *baton = new Baton;
-    async.data = (void*)baton;
-
     baton->handle = (long)handle;
     baton->event = ERROR;
     baton->errorCode = errorCode;
+
+    uv_mutex_lock(&mutex);
+    batons.push_back(baton);
+    uv_mutex_unlock(&mutex);
+
     uv_async_send(&async);
 
     return 0;
@@ -67,12 +79,15 @@ int CCONV errorHandler(CPhidgetHandle handle, void *userptr, int errorCode, cons
 int CCONV inputChangeHandler(CPhidgetInterfaceKitHandle handle, void *usrptr, int index, int value)
 {
     Baton *baton = new Baton;
-    async.data = (void*)baton;
-
     baton->handle = (long)handle;
     baton->event = INPUT_CHANGE;
     baton->index = index;
     baton->value = value;
+
+    uv_mutex_lock(&mutex);
+    batons.push_back(baton);
+    uv_mutex_unlock(&mutex);
+
     uv_async_send(&async);
 
     return 0;
@@ -81,12 +96,15 @@ int CCONV inputChangeHandler(CPhidgetInterfaceKitHandle handle, void *usrptr, in
 int CCONV outputChangeHandler(CPhidgetInterfaceKitHandle handle, void *usrptr, int index, int value)
 {
     Baton *baton = new Baton;
-    async.data = (void*)baton;
-
     baton->handle = (long)handle;
     baton->event = OUTPUT_CHANGE;
     baton->index = index;
     baton->value = value;
+
+    uv_mutex_lock(&mutex);
+    batons.push_back(baton);
+    uv_mutex_unlock(&mutex);
+
     uv_async_send(&async);
 
     return 0;
@@ -95,12 +113,15 @@ int CCONV outputChangeHandler(CPhidgetInterfaceKitHandle handle, void *usrptr, i
 int CCONV sensorChangeHandler(CPhidgetInterfaceKitHandle handle, void *usrptr, int index, int value)
 {
     Baton *baton = new Baton;
-    async.data = (void*)baton;
-
     baton->handle = (long)handle;
     baton->event = SENSOR_CHANGE;
     baton->index = index;
     baton->value = value;
+
+    uv_mutex_lock(&mutex);
+    batons.push_back(baton);
+    uv_mutex_unlock(&mutex);
+
     uv_async_send(&async);
 
     return 0;
@@ -950,49 +971,58 @@ Handle<Value> getDataRateMin(const Arguments& args)
 void eventCallback(uv_async_t *handle, int status /*UNUSED*/)
 {
     HandleScope scope;
-    Baton *baton = (Baton*)handle->data;
+    uv_mutex_lock(&mutex);
 
-    switch (baton->event)
+    for (unsigned i = 0; i < batons.size(); i++)
     {
-        case ATTACH:
+        Baton *baton = batons[i];
+
+        switch (baton->event)
         {
-            Local<Value> args[] = { Number::New(baton->handle) };
-            node::MakeCallback(contextObj, "attachHandler", 1, args);
-            break;
+            case ATTACH:
+            {
+                Local<Value> args[] = { Number::New(baton->handle) };
+                node::MakeCallback(contextObj, "attachHandler", 1, args);
+                break;
+            }
+            case DETACH:
+            {
+                Local<Value> args[] = { Number::New(baton->handle) };
+                node::MakeCallback(contextObj, "detachHandler", 1, args);
+                break;
+            }
+            case ERROR:
+            {
+                Local<Value> args[] = { Number::New(baton->handle), Number::New(baton->errorCode) };
+                node::MakeCallback(contextObj, "errorHandler", 2, args);
+                break;
+            }
+            case INPUT_CHANGE:
+            {
+                Local<Value> args[] = { Number::New(baton->handle), Number::New(baton->index), Number::New(baton->value) };
+                node::MakeCallback(contextObj, "inputChangeHandler", 3, args);
+                break;
+            }
+            case OUTPUT_CHANGE:
+            {
+                Local<Value> args[] = { Number::New(baton->handle), Number::New(baton->index), Number::New(baton->value) };
+                node::MakeCallback(contextObj, "outputChangeHandler", 3, args);
+                break;
+            }
+            case SENSOR_CHANGE:
+            {
+                Local<Value> args[] = { Number::New(baton->handle), Number::New(baton->index), Number::New(baton->value) };
+                node::MakeCallback(contextObj, "sensorChangeHandler", 3, args);
+                break;
+            }
         }
-        case DETACH:
-        {
-            Local<Value> args[] = { Number::New(baton->handle) };
-            node::MakeCallback(contextObj, "detachHandler", 1, args);
-            break;
-        }
-        case ERROR:
-        {
-            Local<Value> args[] = { Number::New(baton->handle), Number::New(baton->errorCode) };
-            node::MakeCallback(contextObj, "errorHandler", 2, args);
-            break;
-        }
-        case INPUT_CHANGE:
-        {
-            Local<Value> args[] = { Number::New(baton->handle), Number::New(baton->index), Number::New(baton->value) };
-            node::MakeCallback(contextObj, "inputChangeHandler", 3, args);
-            break;
-        }
-        case OUTPUT_CHANGE:
-        {
-            Local<Value> args[] = { Number::New(baton->handle), Number::New(baton->index), Number::New(baton->value) };
-            node::MakeCallback(contextObj, "onputChangeHandler", 3, args);
-            break;
-        }
-        case SENSOR_CHANGE:
-        {
-            Local<Value> args[] = { Number::New(baton->handle), Number::New(baton->index), Number::New(baton->value) };
-            node::MakeCallback(contextObj, "sensorChangeHandler", 3, args);
-            break;
-        }
+
+
+        delete baton;
     }
 
-    delete baton;
+    batons.erase(batons.begin(), batons.end());
+    uv_mutex_unlock(&mutex);
 }
 
 void init(Handle<Object> target)
