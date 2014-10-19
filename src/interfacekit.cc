@@ -24,7 +24,7 @@ public:
     int errorCode;
     int index;
     int value;
-    int handle;
+    long handle;
 };
 
 int CCONV attachHandler(CPhidgetHandle handle, void *userptr)
@@ -32,7 +32,7 @@ int CCONV attachHandler(CPhidgetHandle handle, void *userptr)
     Baton *baton = new Baton;
     async.data = (void*)baton;
 
-    baton->handle = (int)handle;
+    baton->handle = (long)handle;
     baton->event = ATTACH;
     uv_async_send(&async);
 
@@ -44,7 +44,7 @@ int CCONV detachHandler(CPhidgetHandle handle, void *userptr)
     Baton *baton = new Baton;
     async.data = (void*)baton;
 
-    baton->handle = (int)handle;
+    baton->handle = (long)handle;
     baton->event = DETACH;
     uv_async_send(&async);
 
@@ -56,7 +56,7 @@ int CCONV errorHandler(CPhidgetHandle handle, void *userptr, int errorCode, cons
     Baton *baton = new Baton;
     async.data = (void*)baton;
 
-    baton->handle = (int)handle;
+    baton->handle = (long)handle;
     baton->event = ERROR;
     baton->errorCode = errorCode;
     uv_async_send(&async);
@@ -69,7 +69,7 @@ int CCONV inputChangeHandler(CPhidgetInterfaceKitHandle handle, void *usrptr, in
     Baton *baton = new Baton;
     async.data = (void*)baton;
 
-    baton->handle = (int)handle;
+    baton->handle = (long)handle;
     baton->event = INPUT_CHANGE;
     baton->index = index;
     baton->value = value;
@@ -83,7 +83,7 @@ int CCONV outputChangeHandler(CPhidgetInterfaceKitHandle handle, void *usrptr, i
     Baton *baton = new Baton;
     async.data = (void*)baton;
 
-    baton->handle = (int)handle;
+    baton->handle = (long)handle;
     baton->event = OUTPUT_CHANGE;
     baton->index = index;
     baton->value = value;
@@ -97,7 +97,7 @@ int CCONV sensorChangeHandler(CPhidgetInterfaceKitHandle handle, void *usrptr, i
     Baton *baton = new Baton;
     async.data = (void*)baton;
 
-    baton->handle = (int)handle;
+    baton->handle = (long)handle;
     baton->event = SENSOR_CHANGE;
     baton->index = index;
     baton->value = value;
@@ -149,7 +149,7 @@ Handle<Value> create(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_set_OnInputChange_Handler(handle, inputChangeHandler, NULL);
+    errorCode = CPhidgetInterfaceKit_set_OnInputChange_Handler((CPhidgetInterfaceKitHandle)handle, inputChangeHandler, NULL);
 
     if (errorCode != 0)
     {
@@ -158,7 +158,7 @@ Handle<Value> create(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_set_OnSensorChange_Handler(handle, sensorChangeHandler, NULL);
+    errorCode = CPhidgetInterfaceKit_set_OnSensorChange_Handler((CPhidgetInterfaceKitHandle)handle, sensorChangeHandler, NULL);
 
     if (errorCode != 0)
     {
@@ -167,7 +167,7 @@ Handle<Value> create(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_set_OnOutputChange_Handler(handle, outputChangeHandler, NULL);
+    errorCode = CPhidgetInterfaceKit_set_OnOutputChange_Handler((CPhidgetInterfaceKitHandle)handle, outputChangeHandler, NULL);
 
     if (errorCode != 0)
     {
@@ -176,7 +176,7 @@ Handle<Value> create(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    scope.Close(Number::New((int)handle));
+    return scope.Close(Number::New((long)handle));
 }
 
 Handle<Value> open(const Arguments& args)
@@ -197,7 +197,7 @@ Handle<Value> open(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidget_open((CPhidgetHandle)args[0]->Int32Value(), args[1]->Int32Value());
+    errorCode = CPhidget_open((CPhidgetHandle)args[0]->IntegerValue(), args[1]->Int32Value());
 
     if (errorCode != 0)
     {
@@ -227,7 +227,7 @@ Handle<Value> waitForAttachment(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidget_waitForAttachment((CPhidgetHandle)args[0]->Int32Value(), args[1]->Int32Value());
+    errorCode = CPhidget_waitForAttachment((CPhidgetHandle)args[0]->IntegerValue(), args[1]->Int32Value());
 
     if (errorCode != 0)
     {
@@ -257,7 +257,7 @@ Handle<Value> close(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidget_close((CPhidgetHandle)args[0]->Int32Value());
+    errorCode = CPhidget_close((CPhidgetHandle)args[0]->IntegerValue());
 
     if (errorCode != 0)
     {
@@ -287,7 +287,7 @@ Handle<Value> remove(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidget_delete((CPhidgetHandle)args[0]->Int32Value());
+    errorCode = CPhidget_delete((CPhidgetHandle)args[0]->IntegerValue());
 
     if (errorCode != 0)
     {
@@ -295,8 +295,6 @@ Handle<Value> remove(const Arguments& args)
         ThrowException(Exception::TypeError(String::New(errorDescription)));
         return scope.Close(Undefined());
     }
-
-    handle = 0;
 
     return scope.Close(Undefined());
 }
@@ -319,7 +317,7 @@ Handle<Value> getDeviceName(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidget_getDeviceName((CPhidgetHandle)args[0]->Int32Value(), &deviceName);
+    errorCode = CPhidget_getDeviceName((CPhidgetHandle)args[0]->IntegerValue(), &deviceName);
 
     if (errorCode != 0)
     {
@@ -349,7 +347,7 @@ Handle<Value> getSerialNumber(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidget_getSerialNumber((CPhidgetHandle)args[0]->Int32Value(), &serialNumber);
+    errorCode = CPhidget_getSerialNumber((CPhidgetHandle)args[0]->IntegerValue(), &serialNumber);
 
     if (errorCode != 0)
     {
@@ -379,7 +377,7 @@ Handle<Value> getDeviceVersion(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidget_getDeviceVersion((CPhidgetHandle)args[0]->Int32Value(), &deviceVersion);
+    errorCode = CPhidget_getDeviceVersion((CPhidgetHandle)args[0]->IntegerValue(), &deviceVersion);
 
     if (errorCode != 0)
     {
@@ -409,7 +407,7 @@ Handle<Value> getDeviceStatus(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidget_getDeviceStatus((CPhidgetHandle)args[0]->Int32Value(), &deviceStatus);
+    errorCode = CPhidget_getDeviceStatus((CPhidgetHandle)args[0]->IntegerValue(), &deviceStatus);
 
     if (errorCode != 0)
     {
@@ -457,7 +455,7 @@ Handle<Value> getDeviceType(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidget_getDeviceType((CPhidgetHandle)args[0]->Int32Value(), &deviceType);
+    errorCode = CPhidget_getDeviceType((CPhidgetHandle)args[0]->IntegerValue(), &deviceType);
 
     if (errorCode != 0)
     {
@@ -487,7 +485,7 @@ Handle<Value> getInputCount(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_getInputCount((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), &count);
+    errorCode = CPhidgetInterfaceKit_getInputCount((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), &count);
 
     if (errorCode != 0)
     {
@@ -517,7 +515,7 @@ Handle<Value> getInputState(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_getInputState((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), args[1]->Int32Value(), &inputState);
+    errorCode = CPhidgetInterfaceKit_getInputState((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), args[1]->Int32Value(), &inputState);
 
     if (errorCode != 0)
     {
@@ -547,7 +545,7 @@ Handle<Value> getOutputCount(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_getOutputCount((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), &count);
+    errorCode = CPhidgetInterfaceKit_getOutputCount((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), &count);
 
     if (errorCode != 0)
     {
@@ -577,7 +575,7 @@ Handle<Value> getOutputState(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_getOutputState((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), args[1]->Int32Value(), &outputState);
+    errorCode = CPhidgetInterfaceKit_getOutputState((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), args[1]->Int32Value(), &outputState);
 
     if (errorCode != 0)
     {
@@ -607,7 +605,7 @@ Handle<Value> setOutputState(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_setOutputState((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), args[1]->Int32Value(),  args[2]->Int32Value());
+    errorCode = CPhidgetInterfaceKit_setOutputState((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), args[1]->Int32Value(),  args[2]->Int32Value());
 
     if (errorCode != 0)
     {
@@ -637,7 +635,7 @@ Handle<Value> getSensorCount(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_getSensorCount((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), &count);
+    errorCode = CPhidgetInterfaceKit_getSensorCount((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), &count);
 
     if (errorCode != 0)
     {
@@ -667,7 +665,7 @@ Handle<Value> getSensorValue(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_getSensorValue((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), args[1]->Int32Value(), &sensorValue);
+    errorCode = CPhidgetInterfaceKit_getSensorValue((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), args[1]->Int32Value(), &sensorValue);
 
     if (errorCode != 0)
     {
@@ -697,7 +695,7 @@ Handle<Value> getSensorRawValue(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_getSensorRawValue((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), args[1]->Int32Value(), &sensorRawValue);
+    errorCode = CPhidgetInterfaceKit_getSensorRawValue((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), args[1]->Int32Value(), &sensorRawValue);
 
     if (errorCode != 0)
     {
@@ -727,7 +725,7 @@ Handle<Value> getSensorChangeTrigger(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_getSensorChangeTrigger((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), args[1]->Int32Value(), &trigger);
+    errorCode = CPhidgetInterfaceKit_getSensorChangeTrigger((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), args[1]->Int32Value(), &trigger);
 
     if (errorCode != 0)
     {
@@ -757,7 +755,7 @@ Handle<Value> setSensorChangeTrigger(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_setSensorChangeTrigger((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), args[1]->Int32Value(), args[2]->Int32Value());
+    errorCode = CPhidgetInterfaceKit_setSensorChangeTrigger((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), args[1]->Int32Value(), args[2]->Int32Value());
 
     if (errorCode != 0)
     {
@@ -787,7 +785,7 @@ Handle<Value> getRatiometric(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_getRatiometric((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), &ratiometric);
+    errorCode = CPhidgetInterfaceKit_getRatiometric((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), &ratiometric);
 
     if (errorCode != 0)
     {
@@ -817,7 +815,7 @@ Handle<Value> setRatiometric(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_setRatiometric((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), args[1]->Int32Value());
+    errorCode = CPhidgetInterfaceKit_setRatiometric((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), args[1]->Int32Value());
 
     if (errorCode != 0)
     {
@@ -847,7 +845,7 @@ Handle<Value> getDataRate(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_getDataRate((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), args[1]->Int32Value(), &milliseconds);
+    errorCode = CPhidgetInterfaceKit_getDataRate((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), args[1]->Int32Value(), &milliseconds);
 
     if (errorCode != 0)
     {
@@ -877,7 +875,7 @@ Handle<Value> setDataRate(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_setDataRate((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), args[1]->Int32Value(), args[2]->Int32Value());
+    errorCode = CPhidgetInterfaceKit_setDataRate((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), args[1]->Int32Value(), args[2]->Int32Value());
 
     if (errorCode != 0)
     {
@@ -907,7 +905,7 @@ Handle<Value> getDataRateMax(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_getDataRateMax((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), args[1]->Int32Value(), &max);
+    errorCode = CPhidgetInterfaceKit_getDataRateMax((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), args[1]->Int32Value(), &max);
 
     if (errorCode != 0)
     {
@@ -937,7 +935,7 @@ Handle<Value> getDataRateMin(const Arguments& args)
         return scope.Close(Undefined());
     }
 
-    errorCode = CPhidgetInterfaceKit_getDataRateMin((CPhidgetInterfaceKitHandle)args[0]->Int32Value(), args[1]->Int32Value(), &min);
+    errorCode = CPhidgetInterfaceKit_getDataRateMin((CPhidgetInterfaceKitHandle)args[0]->IntegerValue(), args[1]->Int32Value(), &min);
 
     if (errorCode != 0)
     {
