@@ -2,6 +2,7 @@
 #include <v8.h>
 #include <phidget21.h>
 #include <vector>
+#include <string>
 
 using namespace v8;
 
@@ -19,7 +20,7 @@ class Baton
 {
 public:
     Events event;
-    int errorCode;
+    std::string errorString;
     int index;
     int value;
     long handle;
@@ -60,12 +61,12 @@ int CCONV detachHandler(CPhidgetHandle handle, void *userptr)
     return 0;
 }
 
-int CCONV errorHandler(CPhidgetHandle handle, void *userptr, int errorCode, const char *unknown)
+int CCONV errorHandler(CPhidgetHandle handle, void *userptr, int errorCode, const char *errorString)
 {
     Baton *baton = new Baton;
     baton->handle = (long)handle;
     baton->event = ERROR;
-    baton->errorCode = errorCode;
+    baton->errorString = errorString;
 
     uv_mutex_lock(&mutex);
     batons.push_back(baton);
@@ -993,7 +994,7 @@ void eventCallback(uv_async_t *handle, int status /*UNUSED*/)
             }
             case ERROR:
             {
-                Local<Value> args[] = { Number::New(baton->handle), Number::New(baton->errorCode) };
+                Local<Value> args[] = { Number::New(baton->handle), String::New(baton->errorString) };
                 node::MakeCallback(contextObj, "errorHandler", 2, args);
                 break;
             }
@@ -1016,7 +1017,6 @@ void eventCallback(uv_async_t *handle, int status /*UNUSED*/)
                 break;
             }
         }
-
 
         delete baton;
     }
