@@ -26,6 +26,16 @@ try {
 
   phidget.on("attach", function(phid) {
     console.log("Phidget attached!");
+    
+    // Set output 1
+    phidget.setOutputState(phid, 1, 1);
+    
+    console.log("Device Type: " + phidget.getDeviceType(phid));
+    console.log("Device Serial Number: " + phidget.getSerialNumber(phid));
+    console.log("Device Version: " + phidget.getDeviceVersion(phid));
+    console.log("Device Input Count: " + phidget.getInputCount(phid));
+    console.log("Device Output Count: " + phidget.getOutputCount(phid));
+    console.log("Device Sensor Count: " + phidget.getSensorCount(phid));
   });
 
   phidget.on("detach", function(phid) {
@@ -39,21 +49,10 @@ try {
   phidget.open(phid, -1);
 
   console.log("Waiting for interface kit to be attached....");
-
-  phidget.waitForAttachment(10000);
-
-  console.log("Device Type: " + phidget.getDeviceType(phid));
-  console.log("Device Serial Number: " + phidget.getSerialNumber(phid));
-  console.log("Device Version: " + phidget.getDeviceVersionphid));
-  console.log("Device Input Count: " + phidget.getInputCount(phid));
-  console.log("Device Output Count: " + phidget.getOutputCount(phid));
-  console.log("Device Sensor Count: " + phidget.getSensorCount(phid));
 } catch (e) {
   console.error(e);
 }
 
-// Set output 1
-phidget.setOutputState(phid, 1, 1);
 
 // Available methods
 /*
