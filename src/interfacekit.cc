@@ -994,7 +994,7 @@ void eventCallback(uv_async_t *handle, int status /*UNUSED*/)
             }
             case ERROR:
             {
-                Local<Value> args[] = { Number::New(baton->handle), String::New(baton->errorString) };
+                Local<Value> args[] = { Number::New(baton->handle), String::New(baton->errorString.c_str()) };
                 node::MakeCallback(contextObj, "errorHandler", 2, args);
                 break;
             }
